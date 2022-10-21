@@ -1,0 +1,141 @@
+
+#include <stdio.h>
+#include <stdlib.h>
+
+/************************************
+// Macro definitions
+************************************/
+#define  SIZE           50
+#define  Threshold      85
+#define  TRUE           1
+#define  FLASE          1
+
+
+int ped_AirbagDis(int f_p_Data[] , int index);
+
+int sensor_InputData();
+
+int Trans_SenData(int prr[] , int prc[] , int prl[] , int len);
+
+int main() 
+{
+    // Assume that PR, PC, PL are single dimension arrays. //
+
+    int srr[SIZE] , src[SIZE] , srl[SIZE];
+
+    char status;
+
+    // checking the status from the micrcontroller buffer f_p_data[] //
+    status = sensor_InputData(srr , src , srl);
+
+    // Taking decision by checking of the status bit //
+    if(status == 'D')
+    {
+        printf("Pedistrain Airbag will diployed now :\n");
+    }
+    else
+        printf("There is no kind of situation for Airbag Diployment :\n");
+    return 0;
+}
+
+// by using this function, taking input values from sensors for every 1ms // 
+int sensor_InputData(int srr[] , int src[] , int srl[])
+{
+    int i, len =0 ;
+
+    for(i = 0 ; i <= 10 ; i++ )
+    {
+        // PR, PL, PC data should be input/memory from user to the program // 
+        // minimum of 50 samples to be passed for each sensor  //
+        scanf("%d%d%d",&srr[i] , &src[i] , &srl[i]);
+        len++;
+    }
+
+    // printing the sensors data from PR, PL, PC //
+    printf("SRR Timestamp  SRR data\n");
+    printf("-----------------------\n");
+    for(i = 0 ; i <= 10 ; i++)
+    {        
+        printf("%10d%10d\n", i , srr[i]);
+    }
+
+    printf("SRC Timestamp  SRC data\n");
+    printf("-----------------------\n");
+    for(i = 0 ; i <= 10 ; i++)
+    {
+        printf("%10d%10d\n", i , src[i]);
+    }
+
+    printf("SRL Timestamp  SRL data\n");
+    printf("-----------------------\n");
+    for(i = 0 ; i <= 10 ; i++)
+    {
+        printf("%10d%10d\n", i , srl[i]);
+    }
+
+    printf("-----------------------\n");
+    // PR, PC, PL data will be used to construct one more final array called F_P_Data
+    Trans_SenData(srr , src , srl , len);
+}
+
+// By using this function transmitting values into the Microcontroller Transmit buffer //
+int Trans_SenData(int prr[] , int prc[] , int prl[] , int len)
+{
+    int f_p_Data[SIZE] , i = 0, flag = 0, index = 0 , j , k;
+
+    while(i < SIZE)
+    {
+        if(prr[i] > 5 && prr[i] < 245)
+        {
+            f_p_Data[index++] = prr[i];
+            j = i + 5;
+
+            if(index > 0)
+            {
+                f_p_Data[index++] = prc[j];
+                k = j + 5;
+
+                if(len > 0)
+                {
+                    f_p_Data[index++] = prl[k];
+                    len--;
+                }
+            }
+        }
+            i = i + j + k;
+    }
+
+    printf("printing valid data buffer values from pressure sensors :\n");
+    for(i = 0 ; i < index ; i++)
+    {
+        printf("f_p_Data[%d] value is = %d\n",i , f_p_Data[i]);
+    }
+
+    int value = ped_AirbagDis(f_p_Data , index);
+    if(value == TRUE)
+    {
+        return 'D';
+    }
+    else
+        return 'N';
+
+}
+
+// By using this function taking decision for the Airbag diployement //
+int ped_AirbagDis(int f_p_Data[] , int index)
+{
+    int count = 0 , i;
+    for(i = 0 ; i < index ; i++)
+    {
+        if(f_p_Data[i] >= Threshold)
+        {
+            count++;
+        }
+    }
+    if(count >= 5)
+    {
+        return 1;
+    }
+    else
+        return 0;
+}
